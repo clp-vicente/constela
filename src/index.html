@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Constela</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Text:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="sidebar-content">
+                <button id="new-chat-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                    <span>Nuevo Chat</span>
+                </button>
+                <div id="history-container">
+                    <p>Historial</p>
+                    <div id="history-list"></div>
+                </div>
+                <div id="settings-container">
+                    <div class="setting-item">
+                        <label>Modelo</label>
+                        <div class="model-toggle">
+                            <input type="radio" id="model-flash" name="model" value="gemini-1.5-flash" checked>
+                            <label for="model-flash">1.5 Flash</label>
+        
+                            <input type="radio" id="model-pro" name="model" value="gemini-1.5-pro">
+                            <label for="model-pro">1.5 Pro</label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="theme-switch">Modo Oscuro</label>
+                        <label class="switch">
+                            <input type="checkbox" id="theme-switch">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-content">
+            <button id="sidebar-toggle-button"></button>
+
+            <div id="header">
+                <img src="../assets/constela.svg" alt="constela" id="header-logo">
+                <h1 id="header-title">Constela</h1>
+            </div>
+
+            <div id="chat-container">
+                <div id="chat-messages"></div>
+                <div id="input-container">
+                    <input type="text" id="prompt-input" placeholder="Iniciando backend..." disabled>
+                    <button id="send-button" disabled></button>
+                </div>
+            </div>
+
+            <div id="footer">
+                <p>Constela no altera las respuestas de los modelos que utiliza. Gemini no es propiedad de Constela.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="context-menu" class="hidden">
+        <button id="rename-chat-button">Renombrar Chat</button>
+        <button id="delete-chat-button" class="danger">Eliminar Chat</button>
+    </div>
+
+    <div id="rename-modal-overlay" class="hidden">
+        <div id="rename-modal">
+            <h2>Renombrar Chat</h2>
+            <p>Ingresa el nuevo título para esta conversación.</p>
+            <input type="text" id="rename-input">
+            <div class="modal-buttons">
+                <button id="cancel-rename-button">Cancelar</button>
+                <button id="confirm-rename-button">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-modal-overlay" class="hidden">
+        <div id="delete-modal">
+            <h2>Confirmar Eliminación</h2>
+            <p>¿Estás seguro de que quieres eliminar este chat de forma permanente?</p>
+            <div class="modal-buttons">
+                <button id="cancel-delete-button">Cancelar</button>
+                <button id="confirm-delete-button" class="danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

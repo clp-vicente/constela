@@ -1,0 +1,350 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+    const promptInput = document.getElementById('prompt-input');
+    const sendButton = document.getElementById('send-button');
+    const chatMessages = document.getElementById('chat-messages');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
+    const newChatButton = document.getElementById('new-chat-button');
+    const historyList = document.getElementById('history-list');
+    const themeSwitch = document.getElementById('theme-switch');
+    const modelFlashRadio = document.getElementById('model-flash');
+    const modelProRadio = document.getElementById('model-pro');
+    const contextMenu = document.getElementById('context-menu');
+    const renameChatButton = document.getElementById('rename-chat-button');
+    const deleteChatButton = document.getElementById('delete-chat-button');
+    const renameModalOverlay = document.getElementById('rename-modal-overlay');
+    const renameInput = document.getElementById('rename-input');
+    const confirmRenameButton = document.getElementById('confirm-rename-button');
+    const cancelRenameButton = document.getElementById('cancel-rename-button');
+    const deleteModalOverlay = document.getElementById('delete-modal-overlay');
+    const confirmDeleteButton = document.getElementById('confirm-delete-button');
+    const cancelDeleteButton = document.getElementById('cancel-delete-button');
+
+    let typingInterval = null;
+    let currentChatId = null;
+    let conversationHistory = [];
+    let contextMenuChatId = null;
+    let contextMenuChatTitle = null;
+
+
+    function setInputEnabled(enabled) {
+        promptInput.disabled = !enabled;
+        sendButton.disabled = !enabled;
+        promptInput.placeholder = enabled ? "Escribe tu mensaje aquí..." : "Iniciando backend, por favor espera...";
+    }
+
+    function addMessage(text, sender, save = true) {
+    if (save) {
+        const role = sender === 'user' ? 'user' : 'model';
+        conversationHistory.push({ role, parts: [{ text }] });
+    }
+
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', sender);
+    
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.classList.add('message-bubble');
+
+    const parseInlineMarkdown = (str) => {
+        let safeStr = str.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
+        
+        safeStr = safeStr.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+        safeStr = safeStr.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+        safeStr = safeStr.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+        
+        safeStr = safeStr.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        safeStr = safeStr.replace(/__(.*?)__/g, '<u>$1</u>');
+        safeStr = safeStr.replace(/\*(.*?)\*/g, '<i>$1</i>');
+        
+        return safeStr;
+    };
+
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)\n```/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            const p = document.createElement('div');
+            p.innerHTML = parseInlineMarkdown(text.substring(lastIndex, match.index));
+            bubbleDiv.appendChild(p);
+        }
+
+        const lang = match || 'plaintext';
+        const code = match;
+        const pre = document.createElement('pre');
+        const codeEl = document.createElement('code');
+        codeEl.className = `language-${lang}`;
+        codeEl.textContent = code;
+        pre.appendChild(codeEl);
+        bubbleDiv.appendChild(pre);
+        
+        lastIndex = codeBlockRegex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+        const p = document.createElement('div');
+        p.innerHTML = parseInlineMarkdown(text.substring(lastIndex));
+        bubbleDiv.appendChild(p);
+    }
+    
+    if (lastIndex === 0) {
+        bubbleDiv.innerHTML = parseInlineMarkdown(text);
+    }
+
+    messageDiv.appendChild(bubbleDiv);
+    chatMessages.appendChild(messageDiv);
+    
+    bubbleDiv.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    if (save && sender === 'gemini') {
+        const isNewChat = !currentChatId;
+        currentChatId = window.electronAPI.saveChat({ id: currentChatId, history: conversationHistory });
+        if (isNewChat) {
+            loadHistoryList();
+        }
+    }
+}
+
+    function createTypingIndicator() {
+        if (document.getElementById('typing-indicator')) return;
+        clearInterval(typingInterval);
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'gemini');
+        messageDiv.id = 'typing-indicator';
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.classList.add('message-bubble');
+        bubbleDiv.innerText = '.';
+        messageDiv.appendChild(bubbleDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        let dotCount = 1;
+        typingInterval = setInterval(() => {
+            dotCount = (dotCount % 3) + 1;
+            bubbleDiv.innerText = '.'.repeat(dotCount);
+        }, 400);
+    }
+
+    function sendMessage() {
+        const prompt = promptInput.value;
+        if (!prompt.trim() || promptInput.disabled) return;
+        addMessage(prompt, 'user');
+        createTypingIndicator();
+        window.electronAPI.sendPrompt(prompt);
+        promptInput.value = '';
+    }
+
+    function startNewChat() {
+        renameModalOverlay.classList.add('hidden');
+        deleteModalOverlay.classList.add('hidden');
+
+        chatMessages.innerHTML = '';
+        conversationHistory = [];
+        currentChatId = null;
+
+        window.electronAPI.startNewChat(); 
+
+        addMessage("Hola! ¿En qué puedo ayudarte hoy?", 'gemini', false);
+        loadHistoryList();
+
+        setTimeout(() => {
+            setInputEnabled(true);
+            promptInput.focus();
+        }, 50);
+    }
+
+
+    function loadHistoryList() {
+        historyList.innerHTML = '';
+        const historyFiles = window.electronAPI.getChatHistory();
+        historyFiles.forEach(file => {
+            const button = document.createElement('button');
+            button.innerText = file.title;
+            button.className = 'history-item-button';
+            if (file.id === currentChatId) {
+                button.classList.add('active');
+            }
+            button.onclick = () => loadSpecificChat(file.id);
+            button.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e.pageX, e.pageY, file.id, file.title);
+            });
+            historyList.appendChild(button);
+        });
+    }
+
+    function loadSpecificChat(chatId) {
+        const loadedHistory = window.electronAPI.loadChat(chatId);
+        if (loadedHistory) {
+            currentChatId = chatId;
+            conversationHistory = loadedHistory;
+            chatMessages.innerHTML = '';
+
+            loadedHistory.forEach(message => {
+                const sender = message.role === 'user' ? 'user' : 'gemini';
+                addMessage(message.parts.text, sender, false);
+            });
+
+            window.electronAPI.loadHistoryContext(loadedHistory);
+            
+            setInputEnabled(true);
+            promptInput.focus();
+            loadHistoryList();
+        }
+    }
+
+    function showContextMenu(x, y, chatId, chatTitle) {
+        contextMenuChatId = chatId;
+        contextMenuChatTitle = chatTitle;
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.classList.add('visible');
+    }
+
+    function hideContextMenu() {
+        contextMenu.classList.remove('visible');
+    }
+
+    function deleteChat() {
+        if (!contextMenuChatId) return;
+        deleteModalOverlay.classList.remove('hidden');
+        hideContextMenu();
+    }
+    
+    function handleConfirmDelete() {
+        const idToDelete = contextMenuChatId;
+        if (!idToDelete) return;
+        window.electronAPI.deleteChat(idToDelete);
+        if (currentChatId === idToDelete) {
+            startNewChat();
+        }
+        loadHistoryList();
+        deleteModalOverlay.classList.add('hidden');
+    }
+
+    function handleCancelDelete() {
+        deleteModalOverlay.classList.add('hidden');
+    }
+
+    function renameChat() {
+        if (!contextMenuChatId) return;
+        renameInput.value = contextMenuChatTitle;
+        renameModalOverlay.classList.remove('hidden');
+        renameInput.focus();
+        renameInput.select();
+        hideContextMenu();
+    }
+
+    function handleConfirmRename() {
+        const newTitle = renameInput.value;
+        if (newTitle && newTitle.trim() !== "" && newTitle.trim() !== contextMenuChatTitle) {
+            window.electronAPI.renameChat({ oldId: contextMenuChatId, newTitle: newTitle.trim() });
+            if (currentChatId === contextMenuChatId) {
+                currentChatId = null;
+            }
+            loadHistoryList();
+        }
+        renameModalOverlay.classList.add('hidden');
+    }
+
+    function handleCancelRename() {
+        renameModalOverlay.classList.add('hidden');
+    }
+
+    
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const savedModel = localStorage.getItem('model') || 'gemini-1.5-flash';
+    
+    sidebarToggleButton.innerHTML = window.electronAPI.loadSVG('hamburger-icon.svg');
+    sendButton.innerHTML = window.electronAPI.loadSVG('send-icon.svg');
+    document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+    themeSwitch.checked = savedTheme === 'dark';
+
+    if (savedModel === 'gemini-1.5-pro') {
+        modelProRadio.checked = true;
+    } else {
+        modelFlashRadio.checked = true;
+    }
+
+    sidebarToggleButton.addEventListener('click', () => sidebar.classList.toggle('closed'));
+    newChatButton.addEventListener('click', startNewChat);
+
+    themeSwitch.addEventListener('change', () => {
+        const isDarkMode = themeSwitch.checked;
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    });
+
+    function handleModelChange() {
+        const newModel = modelProRadio.checked ? modelProRadio.value : modelFlashRadio.value;
+        const currentModel = localStorage.getItem('model') || 'gemini-1.5-flash';
+        if (newModel !== currentModel) {
+            localStorage.setItem('model', newModel);
+            window.electronAPI.restartWithSettings();
+        }
+    }
+    modelFlashRadio.addEventListener('change', handleModelChange);
+    modelProRadio.addEventListener('change', handleModelChange);
+
+    sendButton.addEventListener('click', sendMessage);
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    renameChatButton.addEventListener('click', renameChat);
+    deleteChatButton.addEventListener('click', deleteChat);
+    confirmRenameButton.addEventListener('click', handleConfirmRename);
+    cancelRenameButton.addEventListener('click', handleCancelRename);
+    confirmDeleteButton.addEventListener('click', handleConfirmDelete);
+    cancelDeleteButton.addEventListener('click', handleCancelDelete);
+
+    renameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleConfirmRename();
+        if (e.key === 'Escape') handleCancelRename();
+    });
+
+    window.addEventListener('click', (e) => {
+        if (!contextMenu.contains(e.target)) {
+            hideContextMenu();
+        }
+    });
+
+    window.electronAPI.onBackendStatus((status) => {
+        if (status === 'ready') {
+            setInputEnabled(true);
+            promptInput.focus();
+        } else {
+            setInputEnabled(false);
+        }
+    });
+
+    window.electronAPI.onResponse((data) => {
+        clearInterval(typingInterval);
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+        try {
+            const response = JSON.parse(data);
+            if (response.text) {
+                addMessage(response.text, 'gemini');
+            } else if (response.error) {
+                addMessage(`Error: ${response.error}`, 'gemini', false);
+            }
+        } catch (e) {
+            console.error("Dato inválido o corrupto recibido del backend: ", data);
+        }
+    });
+
+    loadHistoryList();
+    startNewChat();
+    window.electronAPI.sendRendererReady({ model: savedModel });
+});

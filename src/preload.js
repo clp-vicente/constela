@@ -14,13 +14,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendRendererReady: (settings) => ipcRenderer.send('renderer-ready', settings),
   startNewChat: () => ipcRenderer.send('start-new-chat'),
   loadHistoryContext: (history) => ipcRenderer.send('load-history-context', history),
-  
+
+  dialogOpenFile: () => ipcRenderer.invoke('dialog:openFile'),
+  sendPrompt: (data) => ipcRenderer.send('user-prompt', data),
+
   restartWithSettings: () => ipcRenderer.send('restart-with-settings'),
   getChatHistory: () => ipcRenderer.sendSync('get-chat-history'),
   saveChat: (chat) => ipcRenderer.sendSync('save-chat', chat),
   loadChat: (id) => ipcRenderer.sendSync('load-chat', id),
-  deleteChat: (id) => ipcRenderer.send('delete-chat', id),
-  renameChat: (data) => ipcRenderer.send('rename-chat', data),
+  deleteChat: (id) => ipcRenderer.invoke('delete-chat', id),
+  renameChat: (data) => ipcRenderer.invoke('rename-chat', data),
   
   loadSVG: (filename) => ipcRenderer.sendSync('load-svg', filename),
 });

@@ -1,2 +1,6 @@
 node_modules/
 extraResources/
+backend/api
+GeminiBackend.spec
+build/
+dist/

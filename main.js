@@ -23,6 +23,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile('src/index.html');
+  mainWindow.setMenu(null);
 
   ipcMain.once('renderer-ready', (event, settings) => {
     console.log("renderer listo. iniciando GeminiBackend.exe...");
@@ -84,15 +85,68 @@ function createWindow() {
 
 app.whenReady().then(createWindow);
 
-ipcMain.on('user-prompt', (event, prompt) => { if (pythonProcess) { const request = { prompt: prompt }; pythonProcess.stdin.write(JSON.stringify(request) + '\n'); }});
+ipcMain.on('user-prompt', (event, data) => { 
+    if (pythonProcess) { 
+        pythonProcess.stdin.write(JSON.stringify(data) + '\n'); 
+    }
+});
+
 ipcMain.on('start-new-chat', () => { if (pythonProcess) { const request = { action: 'reset' }; pythonProcess.stdin.write(JSON.stringify(request) + '\n'); }});
 ipcMain.on('restart-with-settings', () => { dialog.showMessageBox(mainWindow, { type: 'info', title: 'Cambio de Modelo', message: 'Para aplicar el cambio de modelo, la aplicación se reiniciará.', buttons: ['OK'] }).then(() => { app.relaunch(); app.quit(); }); });
 ipcMain.on('load-svg', (event, filename) => { const filepath = path.join(__dirname, 'assets', filename); try { event.returnValue = fs.readFileSync(filepath, 'utf-8'); } catch (err) { console.error(`Error al leer SVG: ${filename}`, err); event.returnValue = null; }});
 ipcMain.on('get-chat-history', (event) => { try { const files = fs.readdirSync(CHAT_HISTORY_DIR).filter(f => f.endsWith('.json')); files.sort((a, b) => fs.statSync(path.join(CHAT_HISTORY_DIR, b)).mtime.getTime() - fs.statSync(path.join(CHAT_HISTORY_DIR, a)).mtime.getTime()); event.returnValue = files.map(file => { let title = file.replace('.json', '').replace('chat_', ''); const lastUnderscoreIndex = title.lastIndexOf('_'); if (lastUnderscoreIndex > -1) { const potentialTimestamp = title.substring(lastUnderscoreIndex + 1); if (!isNaN(potentialTimestamp) && potentialTimestamp.length > 5) { title = title.substring(0, lastUnderscoreIndex); }} title = title.replace(/_/g, ' '); if (!title.trim()) { title = "Nuevo Chat"; } return { id: file, title: title.trim() }; }); } catch (e) { event.returnValue = []; }});
 ipcMain.on('save-chat', (event, { id, history }) => { const filename = id || `chat_${Date.now()}.json`; try { fs.writeFileSync(path.join(CHAT_HISTORY_DIR, filename), JSON.stringify(history, null, 2)); event.returnValue = filename; } catch (e) { event.returnValue = id; }});
 ipcMain.on('load-chat', (event, id) => { const filepath = path.join(CHAT_HISTORY_DIR, id); try { if (fs.existsSync(filepath)) { event.returnValue = JSON.parse(fs.readFileSync(filepath, 'utf-8')); } else { event.returnValue = null; }} catch (e) { event.returnValue = null; }});
-ipcMain.on('delete-chat', (event, chatId) => { if (!chatId || typeof chatId !== 'string') return; const filePath = path.join(CHAT_HISTORY_DIR, chatId); if (path.dirname(filePath) !== CHAT_HISTORY_DIR) { return; } try { if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }} catch (err) { console.error(err); }});
-ipcMain.on('rename-chat', (event, { oldId, newTitle }) => { if (!oldId || !newTitle) return; const safeTitle = newTitle.trim().replace(/\s+/g, '_').replace(/[^\w-]/g, ''); const newId = `chat_${safeTitle}_${Date.now()}.json`; const oldPath = path.join(CHAT_HISTORY_DIR, oldId); const newPath = path.join(CHAT_HISTORY_DIR, newId); if (path.dirname(oldPath) !== CHAT_HISTORY_DIR) { return; } try { if (fs.existsSync(oldPath)) { fs.renameSync(oldPath, newPath); }} catch (err) { console.error(err); }});
+
+ipcMain.handle('delete-chat', (event, chatId) => { 
+  if (!chatId || typeof chatId !== 'string') {
+    return { success: false, error: 'ID de chat inválido.' };
+  }
+  const filePath = path.join(CHAT_HISTORY_DIR, chatId);
+
+  if (path.dirname(filePath) !== CHAT_HISTORY_DIR) {
+    return { success: false, error: 'Ruta de archivo no permitida.' };
+  }
+
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Chat eliminado: ${chatId}`);
+      return { success: true };
+    }
+    return { success: false, error: 'El archivo no existe.' };
+  } catch (err) {
+    console.error(`Error al eliminar el chat ${chatId}:`, err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('rename-chat', (event, { oldId, newTitle }) => {
+  if (!oldId || !newTitle) {
+    return { success: false, error: 'Faltan datos para renombrar.' };
+  }
+
+  const safeTitle = newTitle.trim().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+  const newId = `chat_${safeTitle}_${Date.now()}.json`;
+  const oldPath = path.join(CHAT_HISTORY_DIR, oldId);
+  const newPath = path.join(CHAT_HISTORY_DIR, newId);
+
+  if (path.dirname(oldPath) !== CHAT_HISTORY_DIR) {
+    return { success: false, error: 'Ruta de archivo no permitida.' };
+  }
+
+  try {
+    if (fs.existsSync(oldPath)) {
+      fs.renameSync(oldPath, newPath);
+      console.log(`Chat renombrado de ${oldId} a ${newId}`);
+      return { success: true, newId: newId };
+    }
+    return { success: false, error: 'El archivo no existe.' };
+  } catch (err) {
+    console.error(`Error al renombrar el chat ${oldId}:`, err);
+    return { success: false, error: err.message };
+  }
+});
 
 ipcMain.on('load-history-context', (event, history) => {
   if (pythonProcess) {
@@ -101,6 +155,19 @@ ipcMain.on('load-history-context', (event, history) => {
   }
 });
 
+ipcMain.handle('dialog:openFile', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
+      { name: 'Documents', extensions: ['pdf', 'docx', 'pptx'] },
+      { name: 'All Files', extensions: ['*'] },
+    ]
+  });
+  if (!canceled) {
+    return filePaths[0];
+  }
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

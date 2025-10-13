@@ -5,7 +5,7 @@
     <title>Constela</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Text:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="[https://api.fontshare.com/v2/css?f](https://api.fontshare.com/v2/css?f)[]=satoshi@400,500,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -26,19 +26,19 @@
                     <div class="setting-item">
                         <label>Modelo</label>
                         <div class="model-toggle">
-                            <input type="radio" id="model-flash" name="model" value="gemini-1.5-flash" checked>
-                            <label for="model-flash">1.5 Flash</label>
-        
-                            <input type="radio" id="model-pro" name="model" value="gemini-1.5-pro">
-                            <label for="model-pro">1.5 Pro</label>
+                            <input type="radio" id="model-flash" name="model" value="gemini-2.5-flash" checked>
+                            <label for="model-flash">2.5 Flash</label>
+                            <input type="radio" id="model-pro" name="model" value="gemini-2.5-pro">
+                            <label for="model-pro">2.5 Pro</label>
                         </div>
                     </div>
                     <div class="setting-item">
-                        <label for="theme-switch">Modo Oscuro</label>
-                        <label class="switch">
-                            <input type="checkbox" id="theme-switch">
-                            <span class="slider round"></span>
-                        </label>
+                        <label for="theme-selector">Tema</label>
+                        <select id="theme-selector">
+                            <option value="light">Claro</option>
+                            <option value="dark">Oscuro</option>
+                            <option value="rose">Rose</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -55,6 +55,8 @@
             <div id="chat-container">
                 <div id="chat-messages"></div>
                 <div id="input-container">
+                    <button id="attach-file-button" title="Adjuntar archivo"></button>
+                    <div id="attachment-preview" class="hidden"></div>
                     <input type="text" id="prompt-input" placeholder="Iniciando backend..." disabled>
                     <button id="send-button" disabled></button>
                 </div>
@@ -71,25 +73,25 @@
         <button id="delete-chat-button" class="danger">Eliminar Chat</button>
     </div>
 
-    <div id="rename-modal-overlay" class="hidden">
-        <div id="rename-modal">
+    <div id="rename-modal-overlay" class="modal-overlay hidden">
+        <div id="rename-modal" class="modal-content">
             <h2>Renombrar Chat</h2>
             <p>Ingresa el nuevo título para esta conversación.</p>
             <input type="text" id="rename-input">
             <div class="modal-buttons">
-                <button id="cancel-rename-button">Cancelar</button>
-                <button id="confirm-rename-button">Guardar</button>
+                <button id="cancel-rename-button" class="modal-button cancel">Cancelar</button>
+                <button id="confirm-rename-button" class="modal-button confirm-rename">Guardar</button>
             </div>
         </div>
     </div>
 
-    <div id="delete-modal-overlay" class="hidden">
-        <div id="delete-modal">
+    <div id="delete-modal-overlay" class="modal-overlay hidden">
+        <div id="delete-modal" class="modal-content">
             <h2>Confirmar Eliminación</h2>
             <p>¿Estás seguro de que quieres eliminar este chat de forma permanente?</p>
             <div class="modal-buttons">
-                <button id="cancel-delete-button">Cancelar</button>
-                <button id="confirm-delete-button" class="danger">Eliminar</button>
+                <button id="cancel-delete-button" class="modal-button cancel">Cancelar</button>
+                <button id="confirm-delete-button" class="modal-button confirm-delete danger">Eliminar</button>
             </div>
         </div>
     </div>

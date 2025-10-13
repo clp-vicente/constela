@@ -1,7 +1,7 @@
 import google.generativeai as genai
 
 class GeminiClient:
-    def __init__(self, api_key, model_name='gemini-1.5-flash'):
+    def __init__(self, api_key, model_name='gemini-2.5-flash'):
         self.api_key = api_key
         self.model = None
         self.chat = None
@@ -20,9 +20,9 @@ class GeminiClient:
         if self.model:
             self.chat = self.model.start_chat(history=history)
 
-    def send_message(self, message):
+    def send_message(self, content):
         if not self.chat: return {"error": "El cliente de Gemini no se ha inicializado."}
         try:
-            response = self.chat.send_message(message)
+            response = self.chat.send_message(content)
             return {"text": response.text}
         except Exception as e: return {"error": f"Ocurrió un error: {e}"}

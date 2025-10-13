@@ -10,8 +10,9 @@ una app de escritorio para usar gemini de manera nativa en windows.
 * selector para cambiar entre los modelos de gemini
 * formato para los bloques de código en las respuestas
 * soporte para negrita, cursiva y subrayado
+* analisis de imagenes y documentos (pdf, docx, pptx)
 
-// como echarlo a andar
+// compilacion 
 
 necesitas tener node.js, python y una api key de google ai
 
@@ -45,7 +46,8 @@ necesitas tener node.js, python y una api key de google ai
 
 // para crear el instalador
 
-si quieres empaquetar la app
+si quieres empaquetar la app, usa
 
 ```bash
 npm run dist
+```

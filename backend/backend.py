@@ -9,7 +9,7 @@ from pptx import Presentation
 
 from gemini_client import GeminiClient
 
-API_KEY = "AIzaSyBBOpLjjO0IX20qJP46FXibayJYiraF8nU"
+API_KEY = ""
 
 # extraccion de texto
 

@@ -26,7 +26,7 @@ necesitas tener node.js, python y una api key de google ai
 3.  **prepara el backend de python:**
     * instala las librerias necesarias:
         ```bash
-        pip install google-generativeai pyinstaller
+        pip install google-generativeai pyinstaller PyMuPDF python-docx python-pptx
         ```
     * pon tu API_KEY en backend.py
 

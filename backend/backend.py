@@ -13,6 +13,7 @@ API_KEY = ""
 
 # extraccion de texto
 
+
 def extract_text_from_pdf(file_path):
     try:
         with fitz.open(file_path) as doc:
@@ -21,6 +22,7 @@ def extract_text_from_pdf(file_path):
     except Exception as e:
         return f"Error al leer PDF: {e}"
 
+
 def extract_text_from_docx(file_path):
     try:
         doc = docx.Document(file_path)
@@ -28,6 +30,7 @@ def extract_text_from_docx(file_path):
         return text
     except Exception as e:
         return f"Error al leer DOCX: {e}"
+
 
 def extract_text_from_pptx(file_path):
     try:
@@ -41,25 +44,29 @@ def extract_text_from_pptx(file_path):
     except Exception as e:
         return f"Error al leer PPTX: {e}"
 
+
 def send_to_stdout(data_dict):
     try:
         message = json.dumps(data_dict)
-        sys.stdout.buffer.write(message.encode('utf-8'))
-        sys.stdout.buffer.write(b'\n')
+        sys.stdout.buffer.write(message.encode("utf-8"))
+        sys.stdout.buffer.write(b"\n")
         sys.stdout.flush()
     except Exception as e:
-        fallback_error = json.dumps({"error": f"Error interno en el backend al enviar datos: {str(e)}"})
-        sys.stdout.buffer.write(fallback_error.encode('utf-8'))
-        sys.stdout.buffer.write(b'\n')
+        fallback_error = json.dumps(
+            {"error": f"Error interno en el backend al enviar datos: {str(e)}"}
+        )
+        sys.stdout.buffer.write(fallback_error.encode("utf-8"))
+        sys.stdout.buffer.write(b"\n")
         sys.stdout.flush()
 
-def main():
-    sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
-    model_name = sys.argv[1] if len(sys.argv) > 1 else 'gemini-2.5-flash'
-    
+def main():
+    sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
+
+    model_name = sys.argv[1] if len(sys.argv) > 1 else "gemini-2.5-flash"
+
     gemini_client = GeminiClient(api_key=API_KEY, model_name=model_name)
-    
+
     if not gemini_client.model:
         send_to_stdout({"error": "API Key inválida o modelo incorrecto."})
         sys.exit(1)
@@ -71,59 +78,66 @@ def main():
             line = sys.stdin.readline()
             if not line:
                 break
-            
+
             request = json.loads(line)
 
             action = request.get("action")
-            if action == 'reset':
+            if action == "reset":
                 gemini_client.start_new_chat()
                 continue
-            
-            elif action == 'load_history':
+
+            elif action == "load_history":
                 history_from_js = request.get("history", [])
-                
+
                 python_compatible_history = []
                 for message in history_from_js:
-                    if "role" in message and "parts" in message and isinstance(message["parts"], list):
-                        transformed_parts = [part.get("text") for part in message["parts"] if "text" in part]
-                        python_compatible_history.append({
-                            "role": message["role"],
-                            "parts": transformed_parts
-                        })
-                
+                    if (
+                        "role" in message
+                        and "parts" in message
+                        and isinstance(message["parts"], list)
+                    ):
+                        transformed_parts = [
+                            part.get("text")
+                            for part in message["parts"]
+                            if "text" in part
+                        ]
+                        python_compatible_history.append(
+                            {"role": message["role"], "parts": transformed_parts}
+                        )
+
                 gemini_client.load_chat_history(python_compatible_history)
                 continue
-            
+
             user_input = request.get("prompt")
             file_path = request.get("filePath")
-            
+
             content_parts = []
-            
+
             if file_path:
                 try:
                     file_content_text = ""
                     lower_file_path = file_path.lower()
                     mime_type, _ = mimetypes.guess_type(file_path)
 
-                    if mime_type and mime_type.startswith('image/'):
+                    if mime_type and mime_type.startswith("image/"):
                         with open(file_path, "rb") as f:
-                            encoded_data = base64.b64encode(f.read()).decode('utf-8')
-                        
+                            encoded_data = base64.b64encode(f.read()).decode("utf-8")
+
                         image_part = {
                             "inline_data": {
                                 "mime_type": mime_type,
-                                "data": encoded_data
+                                "data": encoded_data,
                             }
                         }
                         content_parts.insert(0, image_part)
-                    
-                    elif lower_file_path.endswith('.pdf'):
+
+                    elif lower_file_path.endswith(".pdf"):
                         file_content_text = extract_text_from_pdf(file_path)
-                    
-                    elif lower_file_path.endswith('.docx'):
+
+                    elif lower_file_path.endswith(".docx"):
                         file_content_text = extract_text_from_docx(file_path)
-                    
-                    elif lower_file_path.endswith('.pptx'):
+
+                    elif lower_file_path.endswith(".pptx"):
                         file_content_text = extract_text_from_pptx(file_path)
 
                     if file_content_text:
@@ -136,16 +150,17 @@ def main():
                 except Exception as e:
                     send_to_stdout({"error": f"Error al procesar el archivo: {str(e)}"})
                     continue
-            
+
             if user_input:
                 content_parts.append(user_input)
-            
+
             if content_parts:
                 response = gemini_client.send_message(content_parts)
                 send_to_stdout(response)
 
         except Exception as e:
             send_to_stdout({"error": str(e)})
+
 
 if __name__ == "__main__":
     main()

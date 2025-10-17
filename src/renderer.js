@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const attachFileButton = document.getElementById('attach-file-button');
     const attachmentPreview = document.getElementById('attachment-preview');
     
-    let typingInterval = null;
+
     let currentChatId = null;
     let conversationHistory = [];
     let contextMenuChatId = null;
@@ -138,21 +138,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createTypingIndicator() {
         if (document.getElementById('typing-indicator')) return;
-        clearInterval(typingInterval);
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', 'gemini');
         messageDiv.id = 'typing-indicator';
         const bubbleDiv = document.createElement('div');
         bubbleDiv.classList.add('message-bubble');
-        bubbleDiv.innerText = '.';
+        const dotsContainer = document.createElement('div');
+        dotsContainer.classList.add('typing-dots');
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.classList.add('typing-dot');
+            dotsContainer.appendChild(dot);
+        }
+        bubbleDiv.appendChild(dotsContainer);
         messageDiv.appendChild(bubbleDiv);
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        let dotCount = 1;
-        typingInterval = setInterval(() => {
-            dotCount = (dotCount % 3) + 1;
-            bubbleDiv.innerText = '.'.repeat(dotCount);
-        }, 400);
     }
 
     function sendMessage() {
@@ -390,7 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.electronAPI.onResponse((data) => {
-        clearInterval(typingInterval);
         const typingIndicator = document.getElementById('typing-indicator');
         if (typingIndicator) {
             typingIndicator.remove();

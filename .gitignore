@@ -4,3 +4,5 @@ backend/api
 GeminiBackend.spec
 build/
 dist/
+.gitignore
+GEMINI.md

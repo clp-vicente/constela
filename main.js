@@ -30,13 +30,11 @@ function createWindow() {
 
     const model = settings.model || 'gemini-2.5-flash';
     
-    const backendExecutable = app.isPackaged
-      ? path.join(process.resourcesPath, 'GeminiBackend.exe')
-      : path.join(__dirname, 'extraResources', 'GeminiBackend.exe');
+    const backendScript = path.join(__dirname, 'backend', 'backend.py');
 
-    console.log(`iniciando backend ejecutable: ${backendExecutable}`);
+    console.log(`iniciando backend script: ${backendScript}`);
     
-    pythonProcess = spawn(backendExecutable, [model]);
+    pythonProcess = spawn('./.venv/bin/python', [backendScript, model]);
 
     pythonProcess.stdout.setEncoding('utf8');
 

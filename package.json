@@ -1,7 +1,7 @@
 {
   "name": "constela",
   "version": "1.0.0",
-  "description": "cliente de gemini 2.5 (flash / pro) para windows",
+  "description": "cliente de escritorio para gemini",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -38,6 +38,9 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": "AppImage"
     }
   }
 }

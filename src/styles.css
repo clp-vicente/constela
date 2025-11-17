@@ -308,9 +308,9 @@ select#theme-selector:hover {
 }
 #prompt-input:focus { outline: none; }
 #prompt-input:disabled { cursor: not-allowed; }
-#send-button, #attach-file-button { background: transparent; border: none; cursor: pointer; padding: 10px; border-radius: 50%; flex-shrink: 0; transition: all var(--transition-speed) var(--transition-bouncy); }
-#send-button:hover, #attach-file-button:hover { background-color: var(--glass-bg-hover); transform: scale(1.15); }
-#send-button svg, #attach-file-button svg { 
+#send-button, #attach-file-button, #settings-button { background: transparent; border: none; cursor: pointer; padding: 10px; border-radius: 50%; flex-shrink: 0; transition: all var(--transition-speed) var(--transition-bouncy); }
+#send-button:hover, #attach-file-button:hover, #settings-button:hover { background-color: var(--glass-bg-hover); transform: scale(1.15); }
+#send-button svg, #attach-file-button svg, #settings-button svg { 
     stroke: var(--icon-color);
 }
 .message { 
@@ -424,6 +424,9 @@ body.rose-mode .message-bubble pre {
     border-radius: 16px;
     width: 100%;
     max-width: 400px;
+}
+#settings-modal {
+    max-width: 500px;
 }
 .modal-content h2 {
     margin-top: 0;
@@ -552,3 +555,117 @@ body.dark-mode .modal-button.confirm-rename, body.rose-mode .modal-button.confir
     stroke: var(--icon-color);
 }
 
+#agent-settings-container {
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 15px;
+}
+
+#agent-settings-container label {
+    display: block;
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+    margin-bottom: 8px;
+}
+
+#agent-instructions {
+    width: 100%;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color-primary);
+    padding: 10px;
+    font-family: var(--font-family);
+    font-size: 0.9em;
+    resize: vertical;
+    min-height: 80px;
+    transition: all var(--transition-speed) ease;
+}
+
+#agent-instructions:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 5px var(--accent-color);
+}
+
+.agent-instructions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.agent-instructions-header label {
+    margin-bottom: 0;
+}
+
+.agent-buttons button {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color-secondary);
+    padding: 4px 8px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+}
+
+.agent-buttons button:hover {
+    background-color: var(--glass-bg-hover);
+    color: var(--text-color-primary);
+}
+
+#model-tuning-container {
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+    margin-top: 15px;
+}
+
+#temperature-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 5px;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+}
+
+#temperature-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+#temperature-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+#max-output-tokens-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--glass-bg);
+    color: var(--text-color-primary);
+    font-family: var(--font-family);
+    font-size: 0.9em;
+    text-align: center;
+}
+
+#max-output-tokens-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 5px var(--accent-color);
+}

@@ -22,6 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelDeleteButton = document.getElementById('cancel-delete-button');
     const attachFileButton = document.getElementById('attach-file-button');
     const attachmentPreview = document.getElementById('attachment-preview');
+    const agentInstructions = document.getElementById('agent-instructions');
+    const saveInstructionsButton = document.getElementById('save-instructions-button');
+    const loadInstructionsButton = document.getElementById('load-instructions-button');
+    const settingsButton = document.getElementById('settings-button');
+    const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+    const closeSettingsButton = document.getElementById('close-settings-button');
+    const temperatureSlider = document.getElementById('temperature-slider');
+    const temperatureValueSpan = document.getElementById('temperature-value');
+    const maxOutputTokensInput = document.getElementById('max-output-tokens-input');
     
 
     let currentChatId = null;
@@ -33,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     paperclipSVG = window.electronAPI.loadSVG('paperclip.svg');
     sidebarToggleButton.innerHTML = window.electronAPI.loadSVG('hamburger-icon.svg');
+    settingsButton.innerHTML = window.electronAPI.loadSVG('x-icon.svg'); // Placeholder for gear icon
     sendButton.innerHTML = window.electronAPI.loadSVG('send-icon.svg');
     attachFileButton.innerHTML = paperclipSVG;
 
@@ -173,7 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         createTypingIndicator();
         setInputEnabled(false);
-        window.electronAPI.sendPrompt({ prompt, filePath: attachedFilePath });
+        const instructions = agentInstructions.value;
+        const temperature = parseFloat(temperatureSlider.value);
+        const maxOutputTokens = parseInt(maxOutputTokensInput.value);
+        window.electronAPI.sendPrompt({ prompt, filePath: attachedFilePath, instructions, temperature, maxOutputTokens });
         
         promptInput.value = '';
         attachmentPreview.classList.add('hidden');
@@ -187,7 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.innerHTML = '';
         conversationHistory = [];
         currentChatId = null;
-        window.electronAPI.startNewChat(); 
+        const instructions = agentInstructions.value;
+        const temperature = parseFloat(temperatureSlider.value);
+        const maxOutputTokens = parseInt(maxOutputTokensInput.value);
+        window.electronAPI.startNewChat({ instructions, temperature, maxOutputTokens }); 
         addMessage("Hola! ¿En qué puedo ayudarte hoy?", 'gemini', false);
         loadHistoryList();
         setTimeout(() => {
@@ -236,7 +252,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage(textContent || "", sender, false, attachmentInfo);
             });
 
-            window.electronAPI.loadHistoryContext(loadedHistory);
+            const instructions = agentInstructions.value;
+            const temperature = parseFloat(temperatureSlider.value);
+            const maxOutputTokens = parseInt(maxOutputTokensInput.value);
+            window.electronAPI.loadHistoryContext({ history: loadedHistory, instructions, temperature, maxOutputTokens });
             setInputEnabled(true);
             promptInput.focus();
             loadHistoryList();
@@ -351,7 +370,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const savedInstructions = localStorage.getItem('agentInstructions') || '';
+    agentInstructions.value = savedInstructions;
+
+    agentInstructions.addEventListener('input', () => {
+        localStorage.setItem('agentInstructions', agentInstructions.value);
+    });
+
+    async function handleSaveInstructions() {
+        const instructions = agentInstructions.value;
+        if (instructions) {
+            await window.electronAPI.dialogSaveInstructions(instructions);
+        }
+    }
+
+    async function handleLoadInstructions() {
+        const instructions = await window.electronAPI.dialogLoadInstructions();
+        if (instructions !== null) {
+            agentInstructions.value = instructions;
+            localStorage.setItem('agentInstructions', instructions);
+        }
+    }
+
+    const savedTemperature = parseFloat(localStorage.getItem('temperature')) || 1.0;
+    const savedMaxOutputTokens = parseInt(localStorage.getItem('maxOutputTokens')) || 2048;
+
+    temperatureSlider.value = savedTemperature;
+    temperatureValueSpan.innerText = savedTemperature.toFixed(1);
+    maxOutputTokensInput.value = savedMaxOutputTokens;
+
+    temperatureSlider.addEventListener('input', () => {
+        temperatureValueSpan.innerText = parseFloat(temperatureSlider.value).toFixed(1);
+        localStorage.setItem('temperature', temperatureSlider.value);
+    });
+
+    maxOutputTokensInput.addEventListener('input', () => {
+        localStorage.setItem('maxOutputTokens', maxOutputTokensInput.value);
+    });
+
+    saveInstructionsButton.addEventListener('click', handleSaveInstructions);
+    loadInstructionsButton.addEventListener('click', handleLoadInstructions);
+
     sidebarToggleButton.addEventListener('click', () => sidebar.classList.toggle('closed'));
+    settingsButton.addEventListener('click', () => settingsModalOverlay.classList.remove('hidden'));
+    closeSettingsButton.addEventListener('click', () => settingsModalOverlay.classList.add('hidden'));
+    settingsModalOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsModalOverlay) {
+            settingsModalOverlay.classList.add('hidden');
+        }
+    });
+
     newChatButton.addEventListener('click', startNewChat);
     attachFileButton.addEventListener('click', handleAttachFile);
     themeSelector.addEventListener('change', () => applyTheme(themeSelector.value));

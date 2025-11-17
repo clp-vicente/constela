@@ -9,7 +9,7 @@ from pptx import Presentation
 
 from gemini_client import GeminiClient
 
-API_KEY = ""
+API_KEY = "AIzaSyBBOpLjjO0IX20qJP46FXibayJYiraF8nU"
 
 # extraccion de texto
 
@@ -82,13 +82,19 @@ def main():
             request = json.loads(line)
 
             action = request.get("action")
+            instructions = request.get("instructions")
+            temperature = request.get("temperature")
+            max_output_tokens = request.get("maxOutputTokens")
+
             if action == "reset":
-                gemini_client.start_new_chat()
+                gemini_client.system_instruction = instructions
+                gemini_client.temperature = temperature
+                gemini_client.max_output_tokens = max_output_tokens
+                gemini_client._update_model_and_chat()
                 continue
 
             elif action == "load_history":
                 history_from_js = request.get("history", [])
-
                 python_compatible_history = []
                 for message in history_from_js:
                     if (
@@ -104,6 +110,14 @@ def main():
                         python_compatible_history.append(
                             {"role": message["role"], "parts": transformed_parts}
                         )
+                
+                if (gemini_client.system_instruction != instructions or
+                    gemini_client.temperature != temperature or
+                    gemini_client.max_output_tokens != max_output_tokens):
+                    gemini_client.system_instruction = instructions
+                    gemini_client.temperature = temperature
+                    gemini_client.max_output_tokens = max_output_tokens
+                    gemini_client._update_model_and_chat()
 
                 gemini_client.load_chat_history(python_compatible_history)
                 continue
@@ -155,7 +169,12 @@ def main():
                 content_parts.append(user_input)
 
             if content_parts:
-                response = gemini_client.send_message(content_parts)
+                response = gemini_client.send_message(
+                    content_parts,
+                    system_instruction=instructions,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens
+                )
                 send_to_stdout(response)
 
         except Exception as e:

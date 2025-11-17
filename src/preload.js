@@ -12,11 +12,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   sendPrompt: (prompt) => ipcRenderer.send('user-prompt', prompt),
   sendRendererReady: (settings) => ipcRenderer.send('renderer-ready', settings),
-  startNewChat: () => ipcRenderer.send('start-new-chat'),
-  loadHistoryContext: (history) => ipcRenderer.send('load-history-context', history),
+  startNewChat: (data) => ipcRenderer.send('start-new-chat', data),
+  loadHistoryContext: (data) => ipcRenderer.send('load-history-context', data),
 
   dialogOpenFile: () => ipcRenderer.invoke('dialog:openFile'),
-  sendPrompt: (data) => ipcRenderer.send('user-prompt', data),
+  dialogSaveInstructions: (instructions) => ipcRenderer.invoke('dialog:saveInstructions', instructions),
+  dialogLoadInstructions: () => ipcRenderer.invoke('dialog:loadInstructions'),
 
   restartWithSettings: () => ipcRenderer.send('restart-with-settings'),
   getChatHistory: () => ipcRenderer.sendSync('get-chat-history'),

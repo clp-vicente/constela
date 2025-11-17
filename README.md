@@ -11,6 +11,7 @@ Una app de escritorio para usar Gemini de manera nativa.
 * Formato para los bloques de código en las respuestas
 * Soporte para negrita, cursiva y subrayado
 * Análisis de imágenes y documentos (pdf, docx, pptx)
+* Capacidades agenticas (en branch experimental, en desarrollo)
 
 // Compilación
 
